@@ -2,6 +2,7 @@ from __future__ import print_function
 import os
 import base64
 import time
+import re
 import pandas as pd
 from email import message_from_bytes
 from email.utils import parseaddr
@@ -16,30 +17,37 @@ from bs4 import BeautifulSoup
 
 DEFAULT_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
-# -----------------------------------------------------------
-# CONFIG
-# -----------------------------------------------------------
-
-# Gmail query: Dec 6+ (because `after:2025/12/05` is strictly after Dec 5)
-QUERY = "after:2025/12/05"
+# All emails STRICTLY AFTER this date
+QUERY = "after:2025/10/28"
 
 # Time gap between checks (seconds)
 INTERVAL = 60  # 1 minute
 
-# Excel file to update every time
-import os
-
-# Get current directory (should be .../NLP-Project copy/Code)
+# ---- project paths ----
 code_dir = os.getcwd()
-
-# Project root is the parent of Code/
 project_root = os.path.dirname(code_dir)
-
-# Data directory lives under project root
 data_dir = os.path.join(project_root, "Data")
+os.makedirs(data_dir, exist_ok=True)
 
-# Final Excel path (no hardcoding)
 OUTPUT_EXCEL = os.path.join(data_dir, "gmail_subject_body_date.xlsx")
+
+
+# -----------------------------------------------------------
+# Excel-safe cleaner (removes illegal XML control chars)
+# -----------------------------------------------------------
+
+_ILLEGAL_XML_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
+
+
+def clean_for_excel(value, max_len=32000):
+    if value is None:
+        return ""
+    if not isinstance(value, str):
+        value = str(value)
+    value = _ILLEGAL_XML_RE.sub("", value)
+    if len(value) > max_len:
+        value = value[:max_len]
+    return value
 
 
 class GmailLiveReader:
@@ -73,7 +81,6 @@ class GmailLiveReader:
                 )
                 creds = flow.run_local_server(port=0)
 
-            # Save token
             with open(self.token_path, "w") as f:
                 f.write(creds.to_json())
 
@@ -92,15 +99,28 @@ class GmailLiveReader:
     # ------------- LIST IDS --------------
     def list_ids(self, query):
         """
-        Return a list of message IDs matching the query.
-        (Single-page; can extend to pagination if needed.)
+        Return a list of *all* message IDs matching the query.
+        Handles pagination via nextPageToken.
         """
         ids = []
-        response = self.service.users().messages().list(
-            userId="me", q=query, maxResults=500, includeSpamTrash=True
-        ).execute()
+        page_token = None
 
-        ids.extend([m["id"] for m in response.get("messages", [])])
+        while True:
+            response = self.service.users().messages().list(
+                userId="me",
+                q=query,
+                maxResults=500,          # per page
+                pageToken=page_token,    # None on first call
+                includeSpamTrash=True,
+            ).execute()
+
+            ids.extend([m["id"] for m in response.get("messages", [])])
+
+            page_token = response.get("nextPageToken")
+            if not page_token:
+                break
+
+        print(f"[DEBUG] list_ids → found {len(ids)} messages for query: {query}")
         return ids
 
     # ----------- FETCH ONE MAIL ----------
@@ -124,7 +144,6 @@ class GmailLiveReader:
         except Exception:
             pass
 
-        # Extract body
         plain, html = "", ""
 
         if email_msg.is_multipart():
@@ -153,14 +172,15 @@ class GmailLiveReader:
 
         body = plain if plain.strip() else self.html_to_text(html)
 
+        # Clean all fields for Excel safety
         return {
-            "id": msg_id,
-            "sender_name": sender_name,
-            "sender_email": sender_email,
-            "subject": subject,
-            "body": body,
-            "date_received": date_str,
-            "gmail_link": f"{self.gmail_web_base}{msg_id}",
+            "id": clean_for_excel(msg_id),
+            "sender_name": clean_for_excel(sender_name),
+            "sender_email": clean_for_excel(sender_email),
+            "subject": clean_for_excel(subject),
+            "body": clean_for_excel(body),
+            "date_received": clean_for_excel(date_str),
+            "gmail_link": clean_for_excel(f"{self.gmail_web_base}{msg_id}"),
         }
 
     # -------- NEW-ONLY FETCH AS DF -------
@@ -183,9 +203,15 @@ class GmailLiveReader:
         for mid in new_ids:
             details = self.get_details(mid)
             rows.append(details)
-            seen_ids.add(mid)   # mark as processed
+            seen_ids.add(mid)
 
-        return pd.DataFrame(rows)
+        df = pd.DataFrame(rows)
+
+        # Extra safety: clean all string columns
+        for col in df.select_dtypes(include=["object"]).columns:
+            df[col] = df[col].map(clean_for_excel)
+
+        return df
 
 
 # -----------------------------------------------------------
@@ -201,14 +227,15 @@ if __name__ == "__main__":
     # 1) Load existing Excel if present
     if os.path.exists(OUTPUT_EXCEL):
         master_df = pd.read_excel(OUTPUT_EXCEL)
-        # make sure id is string
+        for col in master_df.select_dtypes(include=["object"]).columns:
+            master_df[col] = master_df[col].map(clean_for_excel)
+
         if "id" in master_df.columns:
             seen_ids = set(master_df["id"].astype(str).tolist())
         else:
             seen_ids = set()
         print(f"[INIT] Loaded {len(master_df)} rows from {OUTPUT_EXCEL}")
     else:
-        # fresh file
         master_df = pd.DataFrame(columns=[
             "id", "sender_name", "sender_email",
             "subject", "body", "date_received", "gmail_link"
@@ -216,7 +243,7 @@ if __name__ == "__main__":
         seen_ids = set()
         print(f"[INIT] No existing Excel found. Will create {OUTPUT_EXCEL}")
 
-    print("📬 Live Gmail Reader (NEW EMAILS ONLY, APPENDING TO EXCEL)")
+    print("Live Gmail Reader (NEW EMAILS ONLY, APPENDING TO EXCEL)")
     print(f"Query: {QUERY}")
     print(f"Interval: {INTERVAL} seconds")
     print(f"Output Excel: {OUTPUT_EXCEL}")
@@ -230,10 +257,11 @@ if __name__ == "__main__":
         if df_new.empty:
             print(f"[{loop_time}] No new emails.")
         else:
-            # 2) Append to in-memory master df
             master_df = pd.concat([master_df, df_new], ignore_index=True)
 
-            # 3) Save back to same Excel
+            for col in master_df.select_dtypes(include=["object"]).columns:
+                master_df[col] = master_df[col].map(clean_for_excel)
+
             master_df.to_excel(OUTPUT_EXCEL, index=False)
 
             print(f"[{loop_time}] {len(df_new)} new email(s) appended to {OUTPUT_EXCEL}")

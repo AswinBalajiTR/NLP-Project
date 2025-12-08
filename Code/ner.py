@@ -471,7 +471,7 @@ class LocalLLMJobParser:
 
             # Summary for mailcontent
             mailcontent = summarize_email(subject, body_full)
-            mailcontents.append(mailcontent)
+            mailcontents.append(full_original)
 
             # Heuristic position
             position_h = heuristic_position(subject, body_full)
