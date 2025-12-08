@@ -170,11 +170,10 @@ This will open a full UI to:
 ---
 
 # Contributors
-
+GWU DATS NLP Project (Fall 2025)
 - **Aswin Balaji Thippa Ramesh**  
 - **Siddharth Saravanan**  
 - **Rahul Arvind**  
-- GWU DATS NLP Project (Fall 2025)
 
 Mentored by, 
 Professor **Dr.Amir Hoessein Jafari**
