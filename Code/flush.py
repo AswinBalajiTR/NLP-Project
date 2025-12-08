@@ -5,15 +5,13 @@ import glob
 import chromadb
 
 
-# PROJECT PATHS (same style as your other files)
-code_dir = os.path.dirname(os.path.abspath(__file__))   # .../NLP-Project/Code
-project_root = os.path.dirname(code_dir)                # .../NLP-Project
+code_dir = os.path.dirname(os.path.abspath(__file__))  
+project_root = os.path.dirname(code_dir)                
 
 DATA_DIR = os.path.join(project_root, "Data")
 CHROMA_DIR = os.path.join(code_dir, "chroma_store")
 
 
-# CONFIG: WHICH DATA FILES TO FLUSH
 EXCEL_PATTERNS = [
     "mail_classified.xlsx",
     "mail_classified*.xlsx",
@@ -69,10 +67,8 @@ def flush_data_files():
         print("✔ Finished deleting derived Excel files.\n")
 
 
-# ==========================================================
-# MAIN
-# ==========================================================
 
+# Main
 if __name__ == "__main__":
     print("\n=== FLUSH JOB EMAIL DATA & VECTOR STORE ===\n")
     flush_data_files()

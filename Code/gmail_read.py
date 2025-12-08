@@ -17,13 +17,13 @@ from bs4 import BeautifulSoup
 
 DEFAULT_SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
-# All emails STRICTLY AFTER this date
+
 QUERY = "after:2025/10/28"
 
-# Time gap between checks (seconds)
-INTERVAL = 60  # 1 minute
 
-# ---- project paths ----
+INTERVAL = 60  
+
+
 code_dir = os.getcwd()
 project_root = os.path.dirname(code_dir)
 data_dir = os.path.join(project_root, "Data")
@@ -32,9 +32,6 @@ os.makedirs(data_dir, exist_ok=True)
 OUTPUT_EXCEL = os.path.join(data_dir, "gmail_subject_body_date.xlsx")
 
 
-# -----------------------------------------------------------
-# Excel-safe cleaner (removes illegal XML control chars)
-# -----------------------------------------------------------
 
 _ILLEGAL_XML_RE = re.compile(r"[\x00-\x08\x0B\x0C\x0E-\x1F]")
 
@@ -65,7 +62,7 @@ class GmailLiveReader:
 
         self.service = self._authenticate()
 
-    # ---------------- AUTH ----------------
+
     def _authenticate(self):
         creds = None
 
@@ -86,7 +83,7 @@ class GmailLiveReader:
 
         return build("gmail", "v1", credentials=creds)
 
-    # ------------- UTILITIES -------------
+
     @staticmethod
     def html_to_text(html):
         if not html:
@@ -96,7 +93,6 @@ class GmailLiveReader:
             tag.decompose()
         return " ".join(soup.get_text(separator=" ", strip=True).split())
 
-    # ------------- LIST IDS --------------
     def list_ids(self, query):
         """
         Return a list of *all* message IDs matching the query.
@@ -109,8 +105,8 @@ class GmailLiveReader:
             response = self.service.users().messages().list(
                 userId="me",
                 q=query,
-                maxResults=500,          # per page
-                pageToken=page_token,    # None on first call
+                maxResults=500,        
+                pageToken=page_token,    
                 includeSpamTrash=True,
             ).execute()
 
@@ -123,7 +119,6 @@ class GmailLiveReader:
         print(f"[DEBUG] list_ids → found {len(ids)} messages for query: {query}")
         return ids
 
-    # ----------- FETCH ONE MAIL ----------
     def get_details(self, msg_id):
         msg = self.service.users().messages().get(
             userId="me", id=msg_id, format="raw"
@@ -136,7 +131,7 @@ class GmailLiveReader:
         subject = email_msg.get("Subject", "")
         date_raw = email_msg.get("Date", "")
 
-        # Parse date → pretty format
+
         date_str = date_raw
         try:
             parsed = datetime.strptime(date_raw[:31], "%a, %d %b %Y %H:%M:%S %z")
@@ -172,7 +167,7 @@ class GmailLiveReader:
 
         body = plain if plain.strip() else self.html_to_text(html)
 
-        # Clean all fields for Excel safety
+
         return {
             "id": clean_for_excel(msg_id),
             "sender_name": clean_for_excel(sender_name),
@@ -183,7 +178,6 @@ class GmailLiveReader:
             "gmail_link": clean_for_excel(f"{self.gmail_web_base}{msg_id}"),
         }
 
-    # -------- NEW-ONLY FETCH AS DF -------
     def fetch_new_as_dataframe(self, query, seen_ids):
         """
         - query: Gmail search string
@@ -207,16 +201,13 @@ class GmailLiveReader:
 
         df = pd.DataFrame(rows)
 
-        # Extra safety: clean all string columns
         for col in df.select_dtypes(include=["object"]).columns:
             df[col] = df[col].map(clean_for_excel)
 
         return df
 
 
-# -----------------------------------------------------------
-# MAIN LIVE LOOP – APPEND TO SAME EXCEL
-# -----------------------------------------------------------
+
 if __name__ == "__main__":
     reader = GmailLiveReader(
         credentials_path="credentials.json",
@@ -224,7 +215,7 @@ if __name__ == "__main__":
         gmail_account_index=0,
     )
 
-    # 1) Load existing Excel if present
+    
     if os.path.exists(OUTPUT_EXCEL):
         master_df = pd.read_excel(OUTPUT_EXCEL)
         for col in master_df.select_dtypes(include=["object"]).columns:
