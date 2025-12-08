@@ -7,7 +7,7 @@ A **Streamlit demo app (`app.py`)** is included to run everything visually.
 
 ---
 
-## 🚀 Features
+## Features
 
 - ✔ Gmail API email fetching  
 - ✔ Job vs non-job classification (Classifier 1 performs best)  
@@ -18,9 +18,9 @@ A **Streamlit demo app (`app.py`)** is included to run everything visually.
 
 ---
 
-# 📦 Installation & Setup
+# Installation & Setup
 
-## 1️⃣ Clone the Repository
+## 1) Clone the Repository
 
 ```bash
 git clone https://github.com/<your-username>/NLP-Project.git
@@ -29,7 +29,7 @@ cd NLP-Project/Code
 
 ---
 
-## 2️⃣ Install Requirements
+## 2) Install Requirements
 
 Before running anything:
 
@@ -37,7 +37,7 @@ Before running anything:
 pip install -r requirements.txt
 ```
 
-⚠️ **IMPORTANT:**  
+ **IMPORTANT:**  
 Make sure you have a **local LLaMA model downloaded** (Ollama recommended)
 
 Example:
@@ -50,7 +50,7 @@ This is required for the RAG chat and some classifier logic.
 
 ---
 
-## 3️⃣ Set Up Gmail API (Google Cloud Console)
+## 3) Set Up Gmail API (Google Cloud Console)
 
 1. Go to: https://console.cloud.google.com  
 2. Create a **new project**  
@@ -69,9 +69,9 @@ NLP-Project/Code/credentials.json
 
 ---
 
-# 🧠 Running the Pipeline
+# Running the Pipeline
 
-## ⭐ STEP 1 — Train the Classifier (Classifier 1)
+## STEP 1 — Train the Classifier (Classifier 1)
 
 ```bash
 cd "Classifier 1"
@@ -86,7 +86,7 @@ best_classifier.pkl
 
 ---
 
-## ⭐ STEP 2 — Fetch Gmail Emails
+## STEP 2 — Fetch Gmail Emails
 
 ```bash
 cd ..
@@ -101,7 +101,7 @@ Data/gmail_subject_body_date.xlsx
 
 ---
 
-## ⭐ STEP 3 — Classify Emails (job / non-job)
+## STEP 3 — Classify Emails (job / non-job)
 
 ```bash
 python predict.py
@@ -115,7 +115,7 @@ Data/mail_classified.xlsx
 
 ---
 
-## ⭐ STEP 4 — Extract Entities (NER)
+## STEP 4 — Extract Entities (NER)
 
 ```bash
 python ner.py
@@ -129,7 +129,7 @@ Data/mail_classified_llm_parsed.xlsx
 
 ---
 
-## ⭐ STEP 5 — Store in ChromaDB (RAG)
+## STEP 5 — Store in ChromaDB (RAG)
 
 ```bash
 python rag.py
@@ -143,7 +143,7 @@ This will:
 
 ---
 
-## ⭐ STEP 6 — Run Streamlit Demo App
+## STEP 6 — Run Streamlit Demo App
 
 For a complete visual demo:
 
@@ -160,20 +160,22 @@ This will open a full UI to:
 
 ---
 
-# 🧪 Example Use Cases
+# Example Use Cases
 
-### 🔍 “Show me all rejected applications”
-### 🗓 “When did I apply to Deloitte?”
-### 📊 “How many companies responded last month?”
-### 🤖 “Summarize all my job applications so far”
+###  “Show me all rejected applications”
+###  “When did I apply to Deloitte?”
+###  “How many companies responded last month?”
+###  “Summarize all my job applications so far”
 
 ---
 
-# 🙌 Contributors
+# Contributors
 
-- **Aswin Balaji TR**  
-- **Siddharth**  
+- **Aswin Balaji Thippa Ramesh**  
+- **Siddharth Saravanan**  
 - **Rahul Arvind**  
 - GWU DATS NLP Project (Fall 2025)
+
+Mentored by **Professor Dr.Amir Hoessein Jafari**
 
 ---
