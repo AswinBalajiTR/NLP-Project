@@ -1,22 +1,3 @@
-"""
-FINAL robust job/non_job classifier.
-
-Uses:
-    - jobs.csv  (your positive job examples)
-    - gmail_subject_body_date.xlsx (your Gmail data)
-
-Classification logic (strict):
-    1) Combine subject + body → full_text
-    2) If full_text matches job-process patterns → job
-    3) Else if full_text matches job-alert patterns → non_job
-    4) Else compute embedding similarity with jobs.csv
-           If VERY_HIGH similarity AND core job keywords present → job
-           Else → non_job
-
-Output:
-    gmail_subject_body_date_labeled.xlsx
-    (added ONE new column: job_label)
-"""
 
 import os
 import re

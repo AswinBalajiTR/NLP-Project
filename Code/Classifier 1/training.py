@@ -9,9 +9,6 @@ import sys
 import os
 
 
-# -----------------------------------------
-# 1. SAFE CSV LOADER WITH FALLBACK ENCODINGS
-# -----------------------------------------
 def load_csv_safely(path):
     """
     Try multiple encodings until one works.
@@ -30,15 +27,12 @@ def load_csv_safely(path):
         except Exception as e:
             print(f"[WARN] Failed with encoding {enc}: {e}")
 
-    # Final fallback: replace bad characters
+
     print("[INFO] Falling back to utf-8 with errors='replace'")
     return pd.read_csv(path, encoding="utf-8", errors="replace")
 
 
-
-# -----------------------------------------
-# 2. LOAD DATA
-# -----------------------------------------
+# Load Data
 csv_path = "../../data/train.csv"
 
 if not os.path.exists(csv_path):
@@ -53,27 +47,21 @@ if not required_cols.issubset(df.columns):
     print(f"[ERROR] Found columns: {set(df.columns)}")
     sys.exit(1)
 
-# -----------------------------------------
-# LABEL DISTRIBUTION CHECK
-# -----------------------------------------
+
 print("\n===== LABEL DISTRIBUTION =====\n")
 print(df["label"].value_counts())
 
 print("\n===== LABEL DISTRIBUTION (PERCENT) =====\n")
 print(df["label"].value_counts(normalize=True) * 100)
 
-# -----------------------------------------
-# 3. PREPROCESS – MERGE SUBJECT + BODY
-# -----------------------------------------
+
 df["subject"] = df["subject"].fillna("")
 df["email_body"] = df["email_body"].fillna("")
 df["text"] = df["subject"] + " " + df["email_body"]
 
 print(f"[INFO] Loaded {len(df)} rows.")
 
-# -----------------------------------------
-# BALANCE THE DATASET (DOWNSAMPLE NON_JOB)
-# -----------------------------------------
+
 
 # Count classes
 job_count = df[df["label"] == "job"].shape[0]
@@ -91,9 +79,7 @@ print(f"[INFO] After balancing: job={job_df.shape[0]}, non_job={non_job_df.shape
 print(f"[INFO] New dataset size: {len(df)}")
 
 
-# -----------------------------------------
-# 4. TRAIN/TEST SPLIT
-# -----------------------------------------
+# Train test split
 X_train, X_test, y_train, y_test = train_test_split(
     df["text"],
     df["label"],
@@ -102,10 +88,7 @@ X_train, X_test, y_train, y_test = train_test_split(
     random_state=42
 )
 
-
-# -----------------------------------------
-# 5. CLASSICAL PIPELINE – TFIDF + LOGISTIC REGRESSION
-# -----------------------------------------
+# Tf-IDF and Logistic Regression
 pipeline = Pipeline([
     ("tfidf", TfidfVectorizer(
         max_features=30000,
@@ -124,10 +107,8 @@ print("[INFO] Training model...")
 pipeline.fit(X_train, y_train)
 print("[INFO] Training complete.")
 
+# Evaluation 
 
-# -----------------------------------------
-# 6. EVALUATION
-# -----------------------------------------
 print("\n===== CLASSIFICATION REPORT =====\n")
 preds = pipeline.predict(X_test)
 print(classification_report(y_test, preds))
@@ -136,9 +117,8 @@ print("\n===== CONFUSION MATRIX =====\n")
 print(confusion_matrix(y_test, preds))
 
 
-# -----------------------------------------
-# 7. SAVE THE MODEL
-# -----------------------------------------
+# Model Save
+
 model_path = "job_classifier_baseline.pkl"
 joblib.dump(pipeline, model_path)
 

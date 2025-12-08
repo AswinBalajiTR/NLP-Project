@@ -12,13 +12,10 @@ from langchain_core.prompts import PromptTemplate
 from langgraph.graph import StateGraph, END
 
 
-# ==========================================================
-# PROJECT PATH SETUP (Code / Data / chroma_store)
-# ==========================================================
+# Path Setup
 
-# Use this file's location, not os.getcwd()
-code_dir = os.path.dirname(os.path.abspath(__file__))   # .../NLP-Project/Code
-project_root = os.path.dirname(code_dir)                # .../NLP-Project
+code_dir = os.path.dirname(os.path.abspath(__file__))   
+project_root = os.path.dirname(code_dir)                
 
 DATA_DIR = os.path.join(project_root, "Data")
 os.makedirs(DATA_DIR, exist_ok=True)
@@ -30,9 +27,7 @@ EXCEL_FILENAME = "mail_classified_llm_parsed.xlsx"
 EXCEL_PATH = os.path.join(DATA_DIR, EXCEL_FILENAME)
 
 
-# ==========================================================
-# LANGGRAPH STATE TYPE
-# ==========================================================
+
 
 class RAGState(TypedDict):
     question: str
@@ -40,18 +35,11 @@ class RAGState(TypedDict):
     answer: str
 
 
-# ==========================================================
-# GLOBALS FOR LAZY INIT
-# ==========================================================
+_rag_app = None      
+_retriever = None    
+_df_parsed: Optional[pd.DataFrame] = None  
 
-_rag_app = None      # compiled LangGraph app
-_retriever = None    # retriever object
-_df_parsed: Optional[pd.DataFrame] = None  # full parsed Excel in memory
-
-
-# ==========================================================
-# PROMPT TEMPLATE (STRUCTURED FIELDS)
-# ==========================================================
+# Prompt Template
 
 prompt_template = PromptTemplate(
     input_variables=["question", "context"],
@@ -97,10 +85,6 @@ so I can open the exact email.
 )
 
 
-# ==========================================================
-# INTERNAL: ANALYTICS ANSWERS (USE FULL DATAFRAME, NOT TOP-K)
-# ==========================================================
-
 def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     """
     For questions like "total applications count", "how many rejections",
@@ -122,7 +106,7 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
 
     q_lower = q.lower()
 
-    # Trigger words for stats/aggregate questions
+   
     trigger_words = [
         "how many",
         "count",
@@ -152,9 +136,6 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     df["position_applied"] = df["position_applied"].fillna("").astype(str).str.strip()
     df["status"] = df["status"].fillna("").astype(str).str.lower().str.strip()
 
-    # -----------------------------------------
-    # Optional filter by company, if mentioned
-    # -----------------------------------------
     companies = sorted(
         c for c in df["company_name"].unique() if isinstance(c, str) and c.strip()
     )
@@ -176,9 +157,7 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     if df_q.empty:
         return f"I couldn't find any job-related emails {scope_text} in your parsed data."
 
-    # -----------------------------------------
-    # Total emails vs unique applications
-    # -----------------------------------------
+
     total_emails = len(df_q)
 
     df_apps = df_q[
@@ -187,9 +166,6 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     unique_apps_df = df_apps[["company_name", "position_applied"]].drop_duplicates()
     num_unique_apps = len(unique_apps_df)
 
-    # -----------------------------------------
-    # Status breakdown (by email)
-    # -----------------------------------------
     base_statuses = ["applied", "in progress", "rejected", "job offered"]
     status_counts = {s: int((df_q["status"] == s).sum()) for s in base_statuses}
 
@@ -208,18 +184,16 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     if "other" in status_counts:
         lines.append(f"- other/unknown: {status_counts['other']}")
 
-    # -----------------------------------------
-    # Company-wise breakdown (for 'companywise' style queries)
-    # -----------------------------------------
+
     if any(t in q_lower for t in ["companywise", "company-wise", "company wise", "per company", "by company", "insight", "insights"]):
         if not df_apps.empty:
             lines.append("\nCompany-wise application insights (distinct applications):")
-            # group by company and status
+            
             grouped = df_apps.groupby("company_name")["status"].value_counts().unstack(fill_value=0)
-            # sort by total apps descending
+            
             grouped["__total__"] = grouped.sum(axis=1)
             grouped = grouped.sort_values("__total__", ascending=False).drop(columns="__total__")
-            # limit to a reasonable number of companies if it's huge
+            
             max_companies = 15
             for i, (comp, row) in enumerate(grouped.iterrows()):
                 if i >= max_companies:
@@ -230,7 +204,6 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
                 parts_str = ", ".join(parts) if parts else "no clear status"
                 lines.append(f"- {comp}: {total_comp} applications ({parts_str})")
 
-    # If user explicitly said "total applications", highlight unique apps
     if "total application" in q_lower or "total applications" in q_lower:
         lines.append(
             f"\nSo, your **total number of distinct applications** {scope_text} "
@@ -240,9 +213,6 @@ def _maybe_answer_with_analytics(question: str) -> Optional[str]:
     return "\n".join(lines)
 
 
-# ==========================================================
-# INTERNAL: BUILD/INIT RAG APP (ONLY ONCE, LAZY)
-# ==========================================================
 
 def _init_rag_app():
     """
@@ -255,7 +225,7 @@ def _init_rag_app():
     """
     global _rag_app, _retriever, _df_parsed
 
-    # Already built once
+
     if _rag_app is not None:
         return
 
@@ -280,20 +250,15 @@ def _init_rag_app():
         if col not in df.columns:
             raise ValueError(f"Missing required column: {col}")
 
-    # store full df for analytics-type questions
     _df_parsed = df.copy()
 
-    # Use a STABLE ID per email, based on mail_link
     df["mail_link"] = df["mail_link"].fillna("").astype(str)
     df["doc_id"] = df["mail_link"]
 
-    # Fallback if mail_link is empty for some reason
+
     mask_empty = df["doc_id"] == ""
     df.loc[mask_empty, "doc_id"] = [f"row_{i}" for i in df.index[mask_empty]]
 
-    # ==========================================================
-    # INIT CHROMA CLIENT + COLLECTION
-    # ==========================================================
 
     print(f">>> Initializing Chroma vector database at: {CHROMA_DIR}")
     client = chromadb.PersistentClient(path=CHROMA_DIR)
@@ -303,11 +268,8 @@ def _init_rag_app():
         metadata={"hnsw:space": "cosine"},
     )
 
-    # ==========================================================
-    # INCREMENTAL ADD: ONLY EMBED NEW DOCS
-    # ==========================================================
 
-    existing = collection.get(limit=1_000_000)   # large limit to fetch all
+    existing = collection.get(limit=1_000_000)   
     existing_ids = set(existing.get("ids", []))
 
     print(f">>> Existing vectors in Chroma: {len(existing_ids)}")
@@ -341,9 +303,7 @@ def _init_rag_app():
 
         print("✔ Embedding + storage for new rows complete.\n")
 
-    # ==========================================================
-    # LANGCHAIN RETRIEVER + LLM (Ollama Llama 3.1)
-    # ==========================================================
+
 
     lc_embedder = HuggingFaceEmbeddings(model_name="BAAI/bge-large-en-v1.5")
 
@@ -354,20 +314,16 @@ def _init_rag_app():
         persist_directory=CHROMA_DIR,
     )
 
-    # Ask for more docs so LLM has enough context
     retriever = vectorstore.as_retriever(search_kwargs={"k": 10})
     _retriever = retriever
 
     print(">>> Using Ollama Llama 3.1 model...")
 
     llm = Ollama(
-        model="llama3.1",   # change if you use another model, e.g. "qwen2.5:14b-instruct"
+        model="llama3.1",   
         temperature=0.2,
     )
 
-    # ==========================================================
-    # NODES
-    # ==========================================================
 
     def retrieve_node(state: RAGState):
         """Retrieve top matching email records."""
@@ -383,7 +339,7 @@ def _init_rag_app():
             )
             return state
 
-        # Build structured context so LLM clearly "sees" fields
+
         context_lines = []
         for i, doc in enumerate(state["retrieved_docs"], start=1):
             meta = doc.metadata or {}
@@ -415,9 +371,6 @@ def _init_rag_app():
 
         return state
 
-    # ==========================================================
-    # BUILD LANGGRAPH PIPELINE
-    # ==========================================================
 
     workflow = StateGraph(RAGState)
     workflow.add_node("retrieve", retrieve_node)
@@ -432,9 +385,6 @@ def _init_rag_app():
     print(">>> RAG app initialized.")
 
 
-# ==========================================================
-# PUBLIC API FOR ASKING QUESTIONS
-# ==========================================================
 
 def ask(question: str) -> str:
     """
@@ -450,16 +400,15 @@ def ask(question: str) -> str:
     if not question or not str(question).strip():
         return "Please provide a non-empty question."
 
-    # Ensure everything is initialized
+
     if _rag_app is None:
         _init_rag_app()
 
-    # 1) Try deterministic analytics path (full DataFrame)
     analytics_answer = _maybe_answer_with_analytics(question)
     if analytics_answer is not None:
         return analytics_answer
 
-    # 2) Otherwise fall back to RAG
+
     initial_state: RAGState = {
         "question": question,
         "retrieved_docs": [],
@@ -469,7 +418,6 @@ def ask(question: str) -> str:
     return final_state["answer"]
 
 
-# COMMAND LINE INTERFACE
 if __name__ == "__main__":
     print("\n Job Application RAG System Ready.\n")
     print(f"(Using data from: {EXCEL_PATH})")
