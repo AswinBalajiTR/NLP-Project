@@ -17,9 +17,9 @@ SCOPES = ["https://www.googleapis.com/auth/gmail.readonly"]
 
 # All emails on/after 1 Dec 2025:
 # "after:2025/11/30" includes 2025-12-01 and later
-GMAIL_QUERY = "after:2025/10/28 before:2025/11/02"
+GMAIL_QUERY = "after:2025/08/15 before:2025/11/02"
 
-OUTPUT_FILE = "gmail_subject_body_date.xlsx"
+OUTPUT_FILE = "../Data/gmail_subject_body_date.xlsx"
 
 # Base URL to open a specific message in Gmail (account 0 / default account)
 GMAIL_WEB_BASE = "https://mail.google.com/mail/u/0/#all/"
@@ -59,49 +59,35 @@ def clean_for_excel(text, max_len=32000):
 
 
 def html_to_text(html: str) -> str:
-    """Convert HTML content to clean plain text."""
     if not html:
         return ""
-
     soup = BeautifulSoup(html, "html.parser")
-
     # Remove script/style tags
     for tag in soup(["script", "style"]):
         tag.decompose()
-
     # Get visible text
     text = soup.get_text(separator=" ", strip=True)
-
     # Collapse multiple spaces
     return " ".join(text.split())
 
 
-# -----------------------------------------
 # AUTHENTICATION
-# -----------------------------------------
 def get_gmail_service():
-    """Authenticate and return Gmail API service."""
     creds = None
-
     if os.path.exists("token.json"):
         creds = Credentials.from_authorized_user_file("token.json", SCOPES)
-
     if not creds or not creds.valid:
         if creds and creds.expired and creds.refresh_token:
             creds.refresh(Request())
         else:
             flow = InstalledAppFlow.from_client_secrets_file("credentials.json", SCOPES)
             creds = flow.run_local_server(port=0)
-
         with open("token.json", "w") as token:
             token.write(creds.to_json())
-
     return build("gmail", "v1", credentials=creds)
 
 
-# -----------------------------------------
 # FETCH *ALL* MESSAGE IDS WITH PAGINATION
-# -----------------------------------------
 def list_all_message_ids(service, max_results=None, query=""):
     """
     Return list of Gmail message IDs matching the query.
@@ -138,9 +124,7 @@ def list_all_message_ids(service, max_results=None, query=""):
     return all_ids
 
 
-# -----------------------------------------
 # FETCH DETAILS (SENDER, SUBJECT, BODY, DATE)
-# -----------------------------------------
 def get_message_details(service, msg_id):
     """Get sender_name, sender_email, subject, body (plain text), and date from a Gmail message."""
     msg = service.users().messages().get(
