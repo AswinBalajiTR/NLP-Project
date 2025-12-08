@@ -162,10 +162,13 @@ This will open a full UI to:
 
 ## Example Use Cases
 
-- “Show me all rejected applications”
-- “When did I apply to Deloitte?”
-- “How many companies responded last month?”
-- “Summarize all my job applications so far”
+“Show me all rejected applications”
+
+“When did I apply to Deloitte?”
+
+“How many companies responded last month?”
+
+“Summarize all my job applications so far”
 
 ---
 
