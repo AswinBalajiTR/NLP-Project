@@ -176,6 +176,6 @@ This will open a full UI to:
 - **Rahul Arvind**  
 - GWU DATS NLP Project (Fall 2025)
 
-Mentored by, Professor ** Dr.Amir Hoessein Jafari**
+Mentored by, Professor **Dr.Amir Hoessein Jafari**
 
 ---
