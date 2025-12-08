@@ -176,6 +176,7 @@ GWU DATS NLP Project (Fall 2025)
 - **Rahul Arvind**  
 
 Mentored by, 
+
 Professor **Dr.Amir Hoessein Jafari**
 
 ---
