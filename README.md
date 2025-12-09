@@ -1,5 +1,4 @@
 # Multi Agent Gmail Job Application Tracker
-
 #### Automated Email Classification • Job Entity Extraction • RAG Search • ChromaDB Storage • Streamlit Demo
 
 ## DATS 6312 – Introduction to Natural Language Processing  
@@ -186,17 +185,3 @@ This will open a full UI to:
 “How many companies responded last month?”
 
 “Summarize all my job applications so far”
-
----
-
-# Contributors
-GWU DATS NLP Project (Fall 2025)
-- **Aswin Balaji Thippa Ramesh**  
-- **Siddharth Saravanan**  
-- **Rahul Arvind**  
-
-Mentored by, 
-
-Professor **Dr.Amir Hoessein Jafari**
-
----
