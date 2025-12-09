@@ -1,8 +1,8 @@
 # Multi Agent Gmail Job Application Tracker
 
-### *Automated Email Classification • Job Entity Extraction • RAG Search • ChromaDB Storage • Streamlit Demo*
+#### Automated Email Classification • Job Entity Extraction • RAG Search • ChromaDB Storage • Streamlit Demo
 
-# DATS 6312 – Introduction to Natural Language Processing  
+## DATS 6312 – Introduction to Natural Language Processing  
 George Washington University  
 Instructor: Dr. Amir Jafari  
 Group Members: Aswin Balaji Thippa Ramesh, Siddharth Sriram, Rahul Arvind
