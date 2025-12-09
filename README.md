@@ -1,8 +1,25 @@
-# AI-Powered Gmail Job Application Tracker
+# Multi Agent Gmail Job Application Tracker
+
 ### *Automated Email Classification • Job Entity Extraction • RAG Search • ChromaDB Storage • Streamlit Demo*
 
-This project is an end-to-end **NLP pipeline** that reads your Gmail inbox, filters **job-related emails**, extracts structured metadata (company, role, date, status), stores them in a **vector database**, and finally allows you to **chat with your job emails** using RAG (Retrieval-Augmented Generation).
+# DATS 6312 – Introduction to Natural Language Processing  
+George Washington University  
+Instructor: Dr. Amir Jafari  
+Group Members: Aswin Balaji Thippa Ramesh, Siddharth Sriram, Rahul Arvind
 
+# Project Overview
+
+This repository contains the full implementation of our final NLP project for DATS 6312 at The George Washington University.  
+The project focuses on designing and deploying an automated, end-to-end system that:
+
+- Connects securely to the user’s Gmail inbox  
+- Classifies incoming emails as job-related or non-job-related  
+- Extracts structured metadata such as company name, position applied for, status, application date, and original Gmail link  
+- Stores processed emails as embeddings inside a vector database (ChromaDB)  
+- Enables a Retrieval-Augmented Generation (RAG) interface to query job application history using natural language  
+- Provides a Streamlit-based demo application that runs the full pipeline
+
+This system replicates a real-world NLP workflow and uses ML models, NER, embedding search, vector databases, and LLM-based retrieval to create a personal job-application assistant.
 A **Streamlit demo app (`app.py`)** is included to run everything visually.
 
 ---
