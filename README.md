@@ -39,8 +39,8 @@ A **Streamlit demo app (`app.py`)** is included to run everything visually.
 ## 1) Clone the Repository
 
 ```bash
-git clone https://github.com/<your-username>/NLP-Project.git
-cd NLP-Project/Code
+git clone https://github.com/<your-username>/Multi-Agent-Gmail-Job-Application-Tracker.git
+cd Multi-Agent-Gmail-Job-Application-Tracker/Code
 ```
 
 ---
